@@ -36,7 +36,7 @@
 
 #### `.env` (NÃO commitado ✅)
 ```env
-DEEPL_API_KEY=df1b4654-b9af-4f6d-a95b-486fd197dd19:fx
+DEEPL_API_KEY=cole-sua-chave-aqui
 LOG_LEVEL=INFO
 CACHE_DB_PATH=translation_cache.db
 ```

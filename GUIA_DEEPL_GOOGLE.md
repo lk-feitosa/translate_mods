@@ -21,7 +21,7 @@ def print_guide():
 2️⃣ Configurar API keys em .env:
    Copie .env.example → .env e preencha:
    
-   DEEPL_API_KEY=df1b4654-b9af-4f6d-a95b-486fd197dd19:fx
+  DEEPL_API_KEY=cole-sua-chave-aqui
    GOOGLE_API_KEY=sua-chave-do-google (opcional)
 
 3️⃣ Executar tradução:
@@ -57,7 +57,7 @@ DeepL (PRIMÁRIO - Recomendado)
 • Qualidade: ⭐⭐⭐⭐⭐ Excelente
 • Setup: Apenas 1 linha no .env
 
-DEEPL_API_KEY=df1b4654-b9af-4f6d-a95b-486fd197dd19:fx
+DEEPL_API_KEY=cole-sua-chave-aqui
 
 
 Google Translate (FALLBACK - Opcional)

@@ -29,7 +29,7 @@ FUNCIONALIDADE PRINCIPAL
   ✅ Validação de caminhos
 
 INTEGRAÇÃO COM APIs
-  ✅ DeepL (primário) - df1b4654-b9af-4f6d-a95b-486fd197dd19:fx
+  ✅ DeepL (primário) - configurado via .env
   ✅ Google Translate (fallback) - Gratuito
   ✅ Carregamento de .env
   ✅ Suporte a --api-key via CLI
@@ -324,7 +324,7 @@ rm translation_cache.db
 ═══════════════════════════════════════════════════════════════════════════
 
 Status: ✅ PRONTO PARA PRODUÇÃO
-API Key: ✅ Configurada (df1b4654-b9af-4f6d-a95b-486fd197dd19:fx)
+API Key: ✅ Configurada via .env (não versionada)
 Testes: ✅ Todos passando
 Documentação: ✅ Completa
 Git: ✅ 10 commits
