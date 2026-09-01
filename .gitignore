@@ -40,6 +40,18 @@ env/
 *.log
 .cache/
 *.tmp
+translation_cache.db
+*.db
+
+# Large folders (too big for git)
+COLE_SEUS_MODS_OU_MODPACKS_AQUI/
+textura_traducao/
+recovered/
+
+# Compiled Python files
+*.pyc
+*.pyo
+*.pyd
 
 # OS
 Thumbs.db
