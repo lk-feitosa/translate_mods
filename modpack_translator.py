@@ -1,18 +1,24 @@
+
+
 import os
 import json
+import logging
 from jar_scanner import JarScanner
-from translator_core import TranslatorCore
+from translation_provider import TranslatorCore
 from tqdm import tqdm
 from colorama import Fore, Back, Style, init
+
+# Configurar logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 init(autoreset=True)  # Inicializar colorama
 
 class ModpackTranslator:
-    def __init__(self, mods_path, output_path):
+    def __init__(self, mods_path, output_path, deepl_api_key=None):
         self.scanner = JarScanner(mods_path)
-        self.translator = TranslatorCore()
+        self.translator = TranslatorCore(deepl_api_key=deepl_api_key)
         self.output_path = output_path
-
     def run(self):
         print(f"\n{Fore.CYAN}{'='*60}")
         print(f"{Fore.CYAN}🌍 TRADUTOR DE MODPACK MINECRAFT - PT_BR")
@@ -27,6 +33,19 @@ class ModpackTranslator:
             return
         
         print(f"{Fore.GREEN}✅ {len(mod_data)} arquivo(s) de tradução encontrado(s)\n")
+        
+        # Mostrar status dos provedores de tradução
+        print(f"{Fore.CYAN}📡 Provedores de Tradução:")
+        if self.translator.deepl_provider.available:
+            print(f"{Fore.GREEN}   ✅ DeepL: Ativo")
+        else:
+            print(f"{Fore.YELLOW}   ⚠️  DeepL: Desativado")
+        if self.translator.google_provider.available:
+            print(f"{Fore.GREEN}   ✅ Google Translate: Ativo (Fallback)")
+        else:
+            print(f"{Fore.YELLOW}   ⚠️  Google Translate: Desativado")
+        print()
+        
         print(f"{Fore.YELLOW}🔄 Processando traduções...\n")
         
         total_keys = sum(len(data) for data in mod_data.values())
@@ -49,8 +68,7 @@ class ModpackTranslator:
                 # Tenta buscar do cache, se não tiver, traduz
                 translated = self.translator.get_translation(value)
                 if not translated:
-                    translated = f"[PT_BR] {value}"  # Simulação
-                    self.translator.save_translation(value, translated)
+                    translated = f"[NÃO TRADUZIDO] {value}"
                 translated_data[key] = translated
                 translated_keys += 1
             
@@ -66,10 +84,17 @@ class ModpackTranslator:
         
         pbar_mods.close()
         
+        # Mostrar estatísticas de tradução
+        stats = self.translator.get_stats()
         print(f"\n{Fore.CYAN}{'='*60}")
         print(f"{Fore.GREEN}🎉 TRADUÇÃO CONCLUÍDA COM SUCESSO!")
         print(f"{Fore.CYAN}{'='*60}")
         print(f"{Fore.YELLOW}📊 Resumo:")
         print(f"   • Mods processados: {len(mod_data)}")
         print(f"   • Total de chaves traduzidas: {translated_keys}")
+        print(f"{Fore.YELLOW}📈 Fonte das Traduções:")
+        print(f"   • Cache: {stats['cache_hits']} ({stats['cache_percent']:.1f}%)")
+        print(f"   • DeepL: {stats['deepl_hits']} ({stats['deepl_percent']:.1f}%)")
+        print(f"   • Google: {stats['google_hits']} ({stats['google_percent']:.1f}%)")
+        print(f"   • Falhas: {stats['failed']}")
         print(f"   • Saída: {self.output_path}\n")
