@@ -10,6 +10,8 @@ import tempfile
 import zipfile
 from pathlib import Path
 
+from jar_scanner import JarScanner
+
 def create_test_mod_jar():
     """Cria um JAR de teste com arquivos de tradução."""
     
@@ -41,10 +43,69 @@ def create_test_mod_jar():
     
     return temp_dir, jar_path
 
+def test_recursive_jar_scan():
+    """Valida que JARs em subpastas são encontrados recursivamente."""
+    temp_dir = tempfile.mkdtemp()
+    nested_dir = os.path.join(temp_dir, "mods", "pack01")
+    os.makedirs(nested_dir, exist_ok=True)
+
+    jar_path = os.path.join(nested_dir, "example_mod.jar")
+    with zipfile.ZipFile(jar_path, 'w') as jar:
+        jar.writestr("assets/minecraft/lang/en_us.json", json.dumps({"block.minecraft.stone": "Stone"}, ensure_ascii=False))
+
+    found = JarScanner(temp_dir).scan()
+    assert found, "JarScanner não encontrou JAR em subpasta"
+    assert any("assets/minecraft/lang/en_us.json" in key for key in found), "Arquivo en_us.json não foi encontrado recursivamente"
+
+    print("✅ Teste recursivo de scan passou")
+
+
+def test_skip_existing_translation_files():
+    """Valida que arquivos já traduzidos são ignorados por padrão."""
+    from modpack_translator import ModpackTranslator
+
+    temp_dir = tempfile.mkdtemp()
+    mods_dir = os.path.join(temp_dir, "mods")
+    output_dir = os.path.join(temp_dir, "traducoes")
+    os.makedirs(mods_dir, exist_ok=True)
+
+    jar_path = os.path.join(mods_dir, "example_mod.jar")
+    with zipfile.ZipFile(jar_path, 'w') as jar:
+        jar.writestr("assets/minecraft/lang/en_us.json", json.dumps({"item.minecraft.apple": "Apple"}, ensure_ascii=False))
+
+    first_run = ModpackTranslator(mods_dir, output_dir)
+    first_run.run()
+    out_file = os.path.join(output_dir, "assets", "minecraft", "lang", "pt_br.json")
+    assert os.path.exists(out_file), "Arquivo de saída não foi gerado na primeira execução"
+
+    second_run = ModpackTranslator(mods_dir, output_dir)
+    second_run.run()
+    with open(out_file, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    assert data.get("item.minecraft.apple") is not None, "Arquivo existente foi sobrescrito sem necessidade"
+
+    print("✅ Teste de continuidade e skip existente passou")
+
+
+def test_list_values_are_normalized():
+    """Valida que valores tipo list/dict do JSON não quebram o cache nem a tradução."""
+    from translation_provider import TranslatorCore
+
+    translator = TranslatorCore(db_path=':memory:')
+    result = translator.get_translation(['hello', 'world'])
+    assert isinstance(result, str) or result is None, "Valor em lista deve ser convertido em string segura"
+    assert translator.normalize_text(['hello', 'world']) == 'hello, world'
+    print("✅ Teste de valores em lista passou")
+
+
 def main():
     print("\n" + "="*60)
     print("🧪 TESTE DO TRADUTOR COM VISUALIZAÇÃO")
     print("="*60 + "\n")
+
+    test_recursive_jar_scan()
+    test_skip_existing_translation_files()
+    test_list_values_are_normalized()
     
     # Criar JAR de teste
     print("📦 Criando JAR de teste...")

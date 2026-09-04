@@ -5,6 +5,7 @@ Módulo de tradução com suporte a múltiplas APIs
 """
 
 import os
+import json
 import sqlite3
 import logging
 from typing import Optional, Dict
@@ -180,6 +181,19 @@ class TranslatorCore:
             # Coluna já existe, ignorar erro
             pass
     
+    def normalize_text(self, text):
+        """Converte valores de JSON em texto seguro para cache e tradução."""
+        if text is None:
+            return None
+        if isinstance(text, str):
+            return text
+        if isinstance(text, (list, tuple)):
+            normalized_parts = [self.normalize_text(item) for item in text]
+            return ", ".join(part for part in normalized_parts if part)
+        if isinstance(text, dict):
+            return json.dumps(text, ensure_ascii=False)
+        return str(text)
+
     def get_translation(self, text: str) -> Optional[str]:
         """
         Obter tradução do cache ou gerar nova.
@@ -190,10 +204,14 @@ class TranslatorCore:
         3. Fallback para Google Translate (gratuito)
         4. Se falhar, retornar None
         """
+        normalized_text = self.normalize_text(text)
+        if normalized_text is None or normalized_text == '':
+            return None
+
         # 1. Verificar cache
         self.cursor.execute(
             'SELECT translated_text FROM cache WHERE key = ?',
-            (text,)
+            (normalized_text,)
         )
         result = self.cursor.fetchone()
         
@@ -203,23 +221,23 @@ class TranslatorCore:
         
         # 2. Tentar DeepL (premium)
         if self.deepl_provider.available:
-            translated = self.deepl_provider.translate(text)
+            translated = self.deepl_provider.translate(normalized_text)
             if translated:
-                self.save_translation(text, translated, 'deepl')
+                self.save_translation(normalized_text, translated, 'deepl')
                 self.stats['deepl_hits'] += 1
                 return translated
         
         # 3. Fallback para Google Translate (gratuito)
         if self.google_provider.available:
-            translated = self.google_provider.translate(text)
+            translated = self.google_provider.translate(normalized_text)
             if translated:
-                self.save_translation(text, translated, 'google')
+                self.save_translation(normalized_text, translated, 'google')
                 self.stats['google_hits'] += 1
                 return translated
         
         # 4. Se falhar
         self.stats['failed'] += 1
-        logger.warning(f"⚠️  Falha na tradução: {text[:50]}...")
+        logger.warning(f"⚠️  Falha na tradução: {normalized_text[:50]}...")
         return None
     
     def save_translation(self, text: str, translated_text: str, provider: str = 'manual'):

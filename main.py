@@ -21,6 +21,7 @@ def main():
     parser.add_argument('--mods', required=True, help="Pasta contendo os arquivos .jar dos mods")
     parser.add_argument('--output', required=True, help="Pasta de saída para os arquivos traduzidos (pt_br.json)")
     parser.add_argument('--api-key', default=None, help="API key do DeepL (ou use variável DEEPL_API_KEY)")
+    parser.add_argument('--overwrite', action='store_true', help="Sobrescreve arquivos já existentes. Por padrão, continua de onde parou e ignora os já gerados.")
     args = parser.parse_args()
 
     # Validar caminhos
@@ -34,7 +35,7 @@ def main():
     try:
         # Usar API key do argumento ou carregar do .env
         api_key = args.api_key or os.getenv('DEEPL_API_KEY')
-        translator = ModpackTranslator(args.mods, args.output, deepl_api_key=api_key)
+        translator = ModpackTranslator(args.mods, args.output, deepl_api_key=api_key, overwrite=args.overwrite)
         translator.run()
     except KeyboardInterrupt:
         print(f"\n{Fore.YELLOW}⚠️  Tradução cancelada pelo usuário.")
