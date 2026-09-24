@@ -1,116 +1,135 @@
-# Tradutor de Modpacks Minecraft
+# Tradutor de Modpacks Minecraft (LLM-first)
 
-Ferramenta que procura recursivamente arquivos `en_us.json` dentro dos JARs de um modpack, traduz o conteúdo para português brasileiro e cria um resource pack em `mods_traduzidos/`.
+Procura `assets/*/lang/en_us.json` dentro dos JARs de cada modpack, traduz para PT-BR e gera **um resource pack por modpack**.
 
-## Estrutura do projeto
+Provedores, nesta ordem:
+
+1. Cache SQLite (`translation_cache.db`)
+2. **Ollama (primário)** — local, sem cota
+3. DeepL — fallback opcional
+4. Google Translate (`deep-translator`) — fallback final, sem cartão
+
+Este projeto **não traduz** `config/`, quests, NPCs nem FancyMenu. Resource pack só cobre arquivos `lang`.
+
+---
+
+## Estrutura esperada
 
 ```text
-translate_mods/
-├── COLE_SEUS_MODS_OU_MODPACKS_AQUI/  # Coloque aqui o modpack ou a pasta com os JARs
-├── mods_traduzidos/                   # Resource pack gerado
-├── main.py                            # Comando principal
-├── jar_scanner.py                     # Busca recursiva dos JARs
-├── modpack_translator.py              # Processamento e gravação
-├── translation_provider.py            # DeepL, Google e cache
-├── translation_cache.db               # Cache local das traduções
-├── requirements.txt                   # Dependências Python
-└── venv/                              # Ambiente virtual local
+COLE_SEUS_MODS_OU_MODPACKS_AQUI/
+├── deceasedcraft/          ← só os .jar desse modpack
+├── cobleverse/
+├── prominenceII/
+└── superior/
+
+mods_traduzidos/
+├── deceasedcraft/          ← resource pack pronto
+│   ├── assets/<modid>/lang/pt_br.json
+│   ├── pack.mcmeta
+│   └── README.md
+└── cobleverse/
 ```
 
-## Como iniciar no Windows
+Uma pasta de entrada = um modpack = um resource pack de saída.
 
-Abra o terminal na pasta do projeto e execute:
+---
 
-### 1. Criar o ambiente virtual
+## Setup (Windows)
 
-Execute apenas na primeira configuração:
+WSL2 **não é obrigatório**. Ollama nativo no Windows ou Docker Desktop bastam.
 
 ```powershell
 python -m venv venv
-```
-
-### 2. Ativar o ambiente virtual
-
-```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
 .\venv\Scripts\Activate.ps1
-```
-
-Se o ambiente já estiver ativo, o terminal mostrará `(venv)` no início da linha.
-
-### 3. Instalar as dependências
-
-```powershell
 python -m pip install -r requirements.txt
 ```
 
-### 4. Configurar a chave do DeepL
+Crie o arquivo `.env` copiando o modelo de exemplo:
 
-Crie o arquivo `.env` na raiz do projeto, usando `.env.example` como modelo:
+```powershell
+cp .env.example .env
+```
+
+Abra o arquivo `.env` gerado e preencha a chave do DeepL (opcional) ou ajuste o modelo do Ollama:
 
 ```env
-DEEPL_API_KEY=sua_chave_do_deepl
+DEEPL_API_KEY=sua_chave_aqui_se_for_usar
+OLLAMA_MODEL=llama3.2
+OLLAMA_TIMEOUT=120
 ```
 
-A chave fica apenas no `.env`, que não deve ser enviado para o GitHub.
-
-## Como traduzir
-
-1. Coloque o modpack dentro de `COLE_SEUS_MODS_OU_MODPACKS_AQUI/`. A ferramenta percorre todas as subpastas automaticamente.
-2. Execute o comando normal:
+### Subir o Ollama (Docker)
 
 ```powershell
-python main.py --mods ".\COLE_SEUS_MODS_OU_MODPACKS_AQUI" --output ".\mods_traduzidos"
+docker compose up -d
+docker exec -it translate_mods-ollama ollama pull llama3.2
 ```
 
-O modo normal continua de onde parou: arquivos `pt_br.json` já existentes são ignorados, e as traduções ficam disponíveis no cache local.
+Sem Docker, instale o [Ollama](https://ollama.com) no Windows, rode `ollama pull llama3.2` e deixe `ollama serve` na porta `11434`.
 
-### Traduzir tudo novamente
-
-Use `--overwrite` para reprocessar e sobrescrever todos os arquivos de saída:
+Checagem:
 
 ```powershell
-python main.py --mods ".\COLE_SEUS_MODS_OU_MODPACKS_AQUI" --output ".\mods_traduzidos" --overwrite
+curl http://localhost:11434/api/tags
 ```
 
-Para garantir que o Python da instalação do projeto seja usado, execute:
+---
+
+## Comandos
+
+### Menu interativo (escolher um ou todos)
 
 ```powershell
-& ".\venv\Scripts\python.exe" ".\main.py" --mods ".\COLE_SEUS_MODS_OU_MODPACKS_AQUI" --output ".\mods_traduzidos"
+.\venv\Scripts\python.exe main.py
 ```
 
-## Resultado
-
-Os arquivos gerados seguem o formato de resource pack do Minecraft:
+O terminal lista as pastas de `COLE_SEUS_MODS_OU_MODPACKS_AQUI`:
 
 ```text
-mods_traduzidos/
-└── assets/
-	└── <modid>/
-		└── lang/
-			└── pt_br.json
+0. Traduzir TODOS os modpacks
+1. cobleverse
+2. deceasedcraft
+3. prominenceII
+4. superior
 ```
 
-Depois da tradução, copie ou use a pasta `mods_traduzidos/` como resource pack no Minecraft.
+Digite o número.
 
-## Testes
+### Continuar de onde parou (um modpack)
 
-Para validar a busca recursiva, o cache, a continuidade e os valores especiais dos JSONs:
+Arquivos `pt_br.json` já completos são pulados. Chaves `[NÃO TRADUZIDO]` são retraduzidas. Cache reaproveitado.
 
 ```powershell
-python test_translator.py
+.\venv\Scripts\python.exe main.py --modpack deceasedcraft
 ```
 
-## Provedores de tradução
+### Continuar todos
 
-- **DeepL:** provedor principal, configurado com `DEEPL_API_KEY`.
-- **Google Translate:** fallback opcional, conforme as dependências e chaves configuradas.
-- **Cache SQLite:** evita solicitar novamente textos já traduzidos.
+```powershell
+.\venv\Scripts\python.exe main.py --modpack all
+```
+
+### Sobrescrever tudo (retraduz do zero)
+
+Não apaga o cache. Só força reescrever os `pt_br.json` daquele pack.
+
+```powershell
+.\venv\Scripts\python.exe main.py --modpack deceasedcraft --overwrite
+.\venv\Scripts\python.exe main.py --modpack all --overwrite
+```
+
+Interromper com `Ctrl+C` é seguro: o progresso já gravado permanece. Rode de novo **sem** `--overwrite` para retomar.
+
+---
+
+## Como usar o pack no Minecraft
+
+Copie `mods_traduzidos/<nome-do-modpack>/` para `.minecraft/resourcepacks/` e ative no jogo.
+
+---
 
 ## Observações
 
-- A entrada deve conter JARs válidos de mods ou modpacks.
-- A busca por `en_us.json` é recursiva.
-- A pasta `COLE_SEUS_MODS_OU_MODPACKS_AQUI/` é a entrada do usuário.
-- A pasta `mods_traduzidos/` é a saída gerada.
-- Não altere os arquivos originais do modpack durante a tradução.
+- Timeouts do Ollama: aumente `OLLAMA_TIMEOUT` no `.env` (padrão 120s).
+- Google sem cartão: o fallback usa a interface web via `deep-translator`. Pode ser bloqueado por rate limit; o resume cobre isso.
+- O cache `translation_cache.db` é compartilhado entre modpacks. A mesma string não é traduzida duas vezes.

@@ -50,6 +50,8 @@ translation_cache.db
 
 # Large folders (too big for git)
 COLE_SEUS_MODS_OU_MODPACKS_AQUI/
+mods_traduzidos/
+ollama_data/
 textura_traducao/
 recovered/
 

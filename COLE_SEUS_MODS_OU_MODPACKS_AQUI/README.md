@@ -1,39 +1,31 @@
-# 📦 COLE_SEUS_MODS_OU_MODPACKS_AQUI
+# COLE_SEUS_MODS_OU_MODPACKS_AQUI
 
-Esta pasta é destinada a armazenar o modpack original completo **COBBLEVERSE - Pokemon Adventure [Cobblemon]**.
+Uma **subpasta por modpack**. Dentro de cada uma, coloque só os `.jar` daquele pack.
 
-## ℹ️ Por que não está no Git?
-
-- Tamanho: ~15.85 GB (muito grande para versionamento)
-- Conteém arquivos binários (JARs, PNGs, etc)
-- Uso: apenas como referência e fonte para tradução
-
-## 🚀 Como usar?
-
-1. **Baixe o modpack original** de:
-   - CurseForge
-   - Modrinth
-   - Ou outro repositório
-
-2. **Coloque aqui** a pasta completa extraída
-
-3. **Use com o tradutor:**
-   ```bash
-   python main.py --mods ./COLE_SEUS_MODS_OU_MODPACKS_AQUI/mods --output ./traducoes
-   ```
-
-## 📁 Estrutura esperada
-
-```
+```text
 COLE_SEUS_MODS_OU_MODPACKS_AQUI/
-├── mods/                  # Arquivos .jar do modpack
-├── config/                # Configurações dos mods
-├── resourcepacks/         # Packs de recursos
-├── shaderpacks/           # Shaders
-├── datapacks/             # Datapacks Minecraft
-└── [outros arquivos...]
+├── deceasedcraft/     ← JARs do DeceasedCraft
+├── cobleverse/
+├── prominenceII/
+└── superior/
 ```
 
----
+Não coloque `config/`, quests, FancyMenu ou o Minecraft inteiro. O tradutor só lê `assets/*/lang/en_us.json` dentro dos JARs.
 
-**Nota:** Este diretório é ignorado pelo Git para economizar espaço. Se precisar compartilhar, use um serviço de armazenamento em nuvem como Google Drive ou OneDrive.
+## Comandos
+
+```powershell
+# menu para escolher o pack
+python main.py
+
+# um pack específico (resume)
+python main.py --modpack deceasedcraft
+
+# todos
+python main.py --modpack all
+
+# retraduzir do zero
+python main.py --modpack deceasedcraft --overwrite
+```
+
+A saída fica em `mods_traduzidos/<nome-do-modpack>/` (resource pack com `assets/`, `pack.mcmeta` e README).
